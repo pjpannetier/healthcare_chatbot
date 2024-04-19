@@ -275,35 +275,47 @@ def tree_to_code(tree, feature_names):
 #tree_to_code(clf,cols)
 print("----------------------------------------------------------------------------------------")
 
-def gui_interact():
+def gui_chat_interface():
     root = tk.Tk()
     root.title("HealthCare ChatBot")
 
-    def submit_symptoms():
-        symptoms_input = entry.get()
-        matched_symptoms = match_symptoms(symptoms_input, symptoms_dict)
-        if not matched_symptoms:
-            messagebox.showinfo("Result", "No known symptoms identified, please try again.")
-            return
+    # Text widget for chat history
+    chat_history = tk.Text(root, state='disabled', width=80, height=20)
+    chat_history.pack(pady=(5, 0))
 
-        symptoms_list = ", ".join(matched_symptoms)
-        num_days = simpledialog.askinteger("Input", "How many days have you been experiencing these symptoms?")
-        
-        diagnosis = sec_predict(list(matched_symptoms))
-        diagnosis = print_disease(diagnosis)
-        messagebox.showinfo("Diagnosis", f"Based on your symptoms, you may have: {diagnosis}")
+    # Entry widget for user input
+    entry = tk.Entry(root, width=80)
+    entry.pack(pady=(5, 10), side=tk.TOP)
 
-    label = tk.Label(root, text="Enter your symptoms separated by commas:")
-    label.pack(pady=10)
+    def send_message():
+        user_input = entry.get()
+        if user_input:
+            # Display user message in the chat history
+            chat_history.config(state='normal')
+            chat_history.insert(tk.END, "You: " + user_input + "\n")
+            chat_history.config(state='disabled')
+            
+            # Clear the entry widget
+            entry.delete(0, tk.END)
 
-    entry = tk.Entry(root, width=50)
-    entry.pack(pady=10)
+            # Add bot response logic here
+            bot_response = "This is where bot logic will produce a response."
+            chat_history.config(state='normal')
+            chat_history.insert(tk.END, "Bot: " + bot_response + "\n")
+            chat_history.config(state='disabled')
+            
+            # Scroll the chat history to the end
+            chat_history.see(tk.END)
 
-    submit_button = tk.Button(root, text="Submit", command=submit_symptoms)
-    submit_button.pack(pady=20)
+    # Button to send message
+    send_button = tk.Button(root, text="Send", command=send_message)
+    send_button.pack(side=tk.BOTTOM)
+
+    # Bind the enter key to send message
+    root.bind('<Return>', lambda event=None: send_button.invoke())
 
     root.mainloop()
 
-# Call this function to run the GUI
-gui_interact()
+# Call the function to run the chat GUI
+gui_chat_interface()
 
