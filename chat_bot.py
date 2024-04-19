@@ -9,7 +9,16 @@ from sklearn.model_selection import cross_val_score
 from sklearn.svm import SVC
 import csv
 import warnings
+import nltk
+from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords
+import string
+import tkinter as tk
+from tkinter import simpledialog, messagebox
 warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+nltk.download('punkt')
+nltk.download('stopwords')
 
 
 training = pd.read_csv('Data/Training.csv')
@@ -52,6 +61,10 @@ print(model.score(x_test,y_test))
 importances = clf.feature_importances_
 indices = np.argsort(importances)[::-1]
 features = cols
+
+
+stop_words = set(stopwords.words('english') + list(string.punctuation))
+
 
 def readn(nstr):
     engine = pyttsx3.init()
@@ -157,6 +170,17 @@ def print_disease(node):
     disease = le.inverse_transform(val[0])
     return list(map(lambda x:x.strip(),list(disease)))
 
+def match_symptoms(input_text, symptoms_dict):
+    words = word_tokenize(input_text.lower())  # Tokenize and convert to lower case
+    filtered_words = [word for word in words if word not in stop_words]
+    matched_symptoms = {symptom for symptom in symptoms_dict.keys() if symptom.replace('_', ' ') in filtered_words}
+    return matched_symptoms
+
+getSeverityDict()
+getDescription()
+getprecautionDict()
+getInfo()
+
 def tree_to_code(tree, feature_names):
     tree_ = tree.tree_
     feature_name = [
@@ -164,32 +188,19 @@ def tree_to_code(tree, feature_names):
         for i in tree_.feature
     ]
 
-    chk_dis=",".join(feature_names).split(",")
-    symptoms_present = []
+    chk_dis = ",".join(feature_names).split(",")
 
-    while True:
+    print("\nEnter the symptoms you are experiencing  \t\t", end="->")
+    disease_input = input("")
+    matched_symptoms = match_symptoms(disease_input, symptoms_dict)
 
-        print("\nEnter the symptom you are experiencing  \t\t",end="->")
-        disease_input = input("")
-        conf,cnf_dis=check_pattern(chk_dis,disease_input)
-        if conf==1:
-            print("searches related to input: ")
-            for num,it in enumerate(cnf_dis):
-                print(num,")",it)
-            if num!=0:
-                print(f"Select the one you meant (0 - {num}):  ", end="")
-                conf_inp = int(input(""))
-            else:
-                conf_inp=0
-
-            disease_input=cnf_dis[conf_inp]
-            break
-            # print("Did you mean: ",cnf_dis,"?(yes/no) :",end="")
-            # conf_inp = input("")
-            # if(conf_inp=="yes"):
-            #     break
-        else:
-            print("Enter valid symptom.")
+    if matched_symptoms:
+        print("Identified symptoms:")
+        for symptom in matched_symptoms:
+            print(symptom.replace('_', ' '))
+    else:
+        print("No known symptoms identified, please enter detailed symptoms again.")
+        return 
 
     while True:
         try:
@@ -260,10 +271,39 @@ def tree_to_code(tree, feature_names):
             # print("confidence level is " + str(confidence_level))
 
     recurse(0, 1)
-getSeverityDict()
-getDescription()
-getprecautionDict()
-getInfo()
-tree_to_code(clf,cols)
+
+#tree_to_code(clf,cols)
 print("----------------------------------------------------------------------------------------")
+
+def gui_interact():
+    root = tk.Tk()
+    root.title("HealthCare ChatBot")
+
+    def submit_symptoms():
+        symptoms_input = entry.get()
+        matched_symptoms = match_symptoms(symptoms_input, symptoms_dict)
+        if not matched_symptoms:
+            messagebox.showinfo("Result", "No known symptoms identified, please try again.")
+            return
+
+        symptoms_list = ", ".join(matched_symptoms)
+        num_days = simpledialog.askinteger("Input", "How many days have you been experiencing these symptoms?")
+        
+        diagnosis = sec_predict(list(matched_symptoms))
+        diagnosis = print_disease(diagnosis)
+        messagebox.showinfo("Diagnosis", f"Based on your symptoms, you may have: {diagnosis}")
+
+    label = tk.Label(root, text="Enter your symptoms separated by commas:")
+    label.pack(pady=10)
+
+    entry = tk.Entry(root, width=50)
+    entry.pack(pady=10)
+
+    submit_button = tk.Button(root, text="Submit", command=submit_symptoms)
+    submit_button.pack(pady=20)
+
+    root.mainloop()
+
+# Call this function to run the GUI
+gui_interact()
 
